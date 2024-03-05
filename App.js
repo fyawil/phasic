@@ -1,7 +1,9 @@
 import { StatusBar } from 'expo-status-bar';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import {NavigationContainer} from '@react-navigation/native';
 import {createNativeStackNavigator} from '@react-navigation/native-stack';
+import { useState } from 'react';
+import {Picker} from '@react-native-picker/picker';
 
 const Stack = createNativeStackNavigator();
 
@@ -71,11 +73,26 @@ handleContactPress = () => {
 }
 
 const Record = () => {
+  const [exerciseName, setExerciseName] = useState('')
+  const [exerciseRepNumber, setExerciseRepNumber] = useState('')
+  const [exerciseRepUnits, setExerciseRepUnits] = useState('reps')
+  const [exerciseLoadNumber, setExerciseLoadNumber] = useState('')
+  const [exerciseLoadUnits, setExerciseLoadUnits] = useState('kg')
+
   return (
     <View>
-      <Text>
-        Record Screen
-      </Text>
+      <TextInput onChangeText={setExerciseName} value={exerciseName} placeholder='Exercise name'/>
+      <TextInput onChangeText={setExerciseRepNumber} value={exerciseRepNumber} placeholder='# of Reps' keyboardType='numeric'/>
+      <Picker selectedValue={exerciseRepUnits} onValueChange={(itemValue) => setExerciseRepUnits(itemValue)}>
+        <Picker.Item label="reps" value="reps" />
+        <Picker.Item label="secs" value="secs" />
+        <Picker.Item label="min(s)" value="min(s)" />
+      </Picker>
+      <TextInput onChangeText={setExerciseLoadNumber} value={exerciseLoadNumber} placeholder='Added Weight' keyboardType='numeric'/>
+      <Picker selectedValue={exerciseLoadUnits} onValueChange={(itemValue) => setExerciseLoadUnits(itemValue)}>
+        <Picker.Item label="kg" value="kg" />
+        <Picker.Item label="lbs" value="lbs" />
+      </Picker>
     </View>
   )
 }
