@@ -1,9 +1,8 @@
 import { StatusBar } from 'expo-status-bar';
-import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable, StyleSheet, Text, TextInput, View, Switch } from 'react-native';
 import {NavigationContainer} from '@react-navigation/native';
 import {createNativeStackNavigator} from '@react-navigation/native-stack';
 import { useState } from 'react';
-import {Picker} from '@react-native-picker/picker';
 
 const Stack = createNativeStackNavigator();
 
@@ -72,27 +71,56 @@ handleContactPress = () => {
   );
 }
 
-const Record = () => {
-  const [exerciseName, setExerciseName] = useState('')
-  const [exerciseRepNumber, setExerciseRepNumber] = useState('')
-  const [exerciseRepUnits, setExerciseRepUnits] = useState('reps')
-  const [exerciseLoadNumber, setExerciseLoadNumber] = useState('')
-  const [exerciseLoadUnits, setExerciseLoadUnits] = useState('kg')
+const ExerciseForTime = () => {
+  const [exerciseName, setExerciseName] = useState('');
+  const [exerciseDuration, setExerciseDuration] = useState('');
+  const [exerciseDurationMins, setExerciseDurationMins] = useState('');
+  const [exerciseDurationSecs, setExerciseDurationSecs] = useState('');
+  const [exerciseLoad, setExerciseLoad] = useState('');
 
   return (
     <View>
-      <TextInput onChangeText={setExerciseName} value={exerciseName} placeholder='Exercise name'/>
-      <TextInput onChangeText={setExerciseRepNumber} value={exerciseRepNumber} placeholder='# of Reps' keyboardType='numeric'/>
-      <Picker selectedValue={exerciseRepUnits} onValueChange={(itemValue) => setExerciseRepUnits(itemValue)}>
-        <Picker.Item label="reps" value="reps" />
-        <Picker.Item label="secs" value="secs" />
-        <Picker.Item label="min(s)" value="min(s)" />
-      </Picker>
-      <TextInput onChangeText={setExerciseLoadNumber} value={exerciseLoadNumber} placeholder='Added Weight' keyboardType='numeric'/>
-      <Picker selectedValue={exerciseLoadUnits} onValueChange={(itemValue) => setExerciseLoadUnits(itemValue)}>
-        <Picker.Item label="kg" value="kg" />
-        <Picker.Item label="lbs" value="lbs" />
-      </Picker>
+      <TextInput onChangeText={setExerciseName} value={exerciseName} placeholder='exercise name'/>
+      <TextInput onChangeText={setExerciseDuration} value={exerciseDuration} placeholder='duration' keyboardType='numeric'/>
+      <TextInput onChangeText={setExerciseDurationMins} value={exerciseDurationMins} placeholder='mins' keyboardType='numeric'/>
+      <TextInput onChangeText={setExerciseDurationSecs} value={exerciseDurationSecs} placeholder='secs' keyboardType='numeric'/>
+      <TextInput onChangeText={setExerciseLoad} value={exerciseLoad} placeholder='added weight' keyboardType='numeric'/>
+    </View>
+  )
+}
+
+const ExerciseForReps = () => {
+  const [exerciseName, setExerciseName] = useState('');
+  const [exerciseReps, setExerciseReps] = useState('');
+  const [exerciseLoad, setExerciseLoad] = useState('');
+
+  return (
+    <View>
+      <TextInput onChangeText={setExerciseName} value={exerciseName} placeholder='exercise name'/>
+      <TextInput onChangeText={setExerciseReps} value={exerciseReps} placeholder='reps' keyboardType='numeric'/>
+      <TextInput onChangeText={setExerciseLoad} value={exerciseLoad} placeholder='added weight' keyboardType='numeric'/>
+    </View>
+  )
+} 
+
+
+const Record = () => {
+
+  const [isReps, setIsReps] = useState(true);
+  const toggleSwitch = () => setIsReps(previousState => !previousState);
+
+  return (
+    <View>
+      <Text>reps</Text>
+      <Switch
+        trackColor={{false: '#767577', true: '#81b0ff'}}
+        thumbColor={isReps ? '#f5dd4b' : '#f4f3f4'}
+        onValueChange={toggleSwitch}
+        value={isReps}
+      />
+      <Text>time</Text>
+      {isReps && <ExerciseForReps />}
+      {!isReps && <ExerciseForTime />}
     </View>
   )
 }
