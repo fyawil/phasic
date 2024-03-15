@@ -121,16 +121,12 @@ const ExerciseForTime = () => {
   const [exerciseName, setExerciseName] = useState('');
   const [exerciseDistance, setExerciseDistance] = useState('')
   const [exerciseDuration, setExerciseDuration] = useState('');
-  const [exerciseDurationMins, setExerciseDurationMins] = useState('');
-  const [exerciseDurationSecs, setExerciseDurationSecs] = useState('');
 
   return (
     <View>
       <TextInput onChangeText={setExerciseName} value={exerciseName} placeholder='exercise name'/>
       <TextInput onChangeText={setExerciseDistance} value={exerciseDistance} placeholder='distance' keyboardType='numeric'/>
       <TextInput onChangeText={setExerciseDuration} value={exerciseDuration} placeholder='duration' keyboardType='numeric'/>
-      <TextInput onChangeText={setExerciseDurationMins} value={exerciseDurationMins} placeholder='mins' keyboardType='numeric'/>
-      <TextInput onChangeText={setExerciseDurationSecs} value={exerciseDurationSecs} placeholder='secs' keyboardType='numeric'/>
     </View>
   )
 }
@@ -159,8 +155,8 @@ const Record = () => {
     <View>
       <Text>reps</Text>
       <Switch
-        trackColor={{false: '#767577', true: '#81b0ff'}}
-        thumbColor={isReps ? '#f5dd4b' : '#f4f3f4'}
+        trackColor={{false: 'grey', true: 'grey'}}
+        thumbColor={isReps ? 'black' : 'black'}
         onValueChange={toggleIsReps}
         value={isReps}
       />
