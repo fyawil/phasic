@@ -2,11 +2,57 @@ import { StatusBar } from 'expo-status-bar';
 import { Pressable, StyleSheet, Text, TextInput, View, Switch } from 'react-native';
 import {NavigationContainer} from '@react-navigation/native';
 import {createNativeStackNavigator} from '@react-navigation/native-stack';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import * as SQLite from 'expo-sqlite';
 
 const Stack = createNativeStackNavigator();
 
 export default function App(){
+
+  useEffect(
+    
+    () => {
+
+    const db = SQLite.openDatabase('phasic.db');
+  
+    db.transaction(tx => {
+      tx.executeSql(
+        'CREATE TABLE IF NOT EXISTS exerciseSet (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, reps INTEGER)'
+      );
+    });
+  }
+  );
+
+  const insertSetIntoDB = (name, reps) => {
+    db.transaction(tx => {
+      tx.executeSql(
+        'INSERT INTO exerciseSet (name, reps) VALUES (?, ?)', [name, reps],
+        (_, result) => {
+          console.log('Rows affected:', result.rowsAffected);
+        },
+        (_, error) => {
+          console.log('Error inserting data:', error);
+        }
+      );
+    });      
+    };
+
+    const displayExercisesData = (name) => {
+      db.transaction(tx => {
+        tx.executeSql(
+          'SELECT * FROM exerciseSet WHERE name = "?"',
+          [name],
+          (_, { rows }) => {
+            const data = rows._array;
+            console.log(data);
+          },
+          (_, error) => {
+            console.log('Error displaying result:', error);
+          }
+        );
+      });
+      };  
+
   return (
     <NavigationContainer>
       <Stack.Navigator>
@@ -73,18 +119,18 @@ handleContactPress = () => {
 
 const ExerciseForTime = () => {
   const [exerciseName, setExerciseName] = useState('');
+  const [exerciseDistance, setExerciseDistance] = useState('')
   const [exerciseDuration, setExerciseDuration] = useState('');
   const [exerciseDurationMins, setExerciseDurationMins] = useState('');
   const [exerciseDurationSecs, setExerciseDurationSecs] = useState('');
-  const [exerciseLoad, setExerciseLoad] = useState('');
 
   return (
     <View>
       <TextInput onChangeText={setExerciseName} value={exerciseName} placeholder='exercise name'/>
+      <TextInput onChangeText={setExerciseDistance} value={exerciseDistance} placeholder='distance' keyboardType='numeric'/>
       <TextInput onChangeText={setExerciseDuration} value={exerciseDuration} placeholder='duration' keyboardType='numeric'/>
       <TextInput onChangeText={setExerciseDurationMins} value={exerciseDurationMins} placeholder='mins' keyboardType='numeric'/>
       <TextInput onChangeText={setExerciseDurationSecs} value={exerciseDurationSecs} placeholder='secs' keyboardType='numeric'/>
-      <TextInput onChangeText={setExerciseLoad} value={exerciseLoad} placeholder='added weight' keyboardType='numeric'/>
     </View>
   )
 }
@@ -98,7 +144,7 @@ const ExerciseForReps = () => {
     <View>
       <TextInput onChangeText={setExerciseName} value={exerciseName} placeholder='exercise name'/>
       <TextInput onChangeText={setExerciseReps} value={exerciseReps} placeholder='reps' keyboardType='numeric'/>
-      <TextInput onChangeText={setExerciseLoad} value={exerciseLoad} placeholder='added weight' keyboardType='numeric'/>
+      <TextInput onChangeText={setExerciseLoad} value={exerciseLoad} placeholder='kg' keyboardType='numeric'/>
     </View>
   )
 } 
@@ -107,7 +153,7 @@ const ExerciseForReps = () => {
 const Record = () => {
 
   const [isReps, setIsReps] = useState(true);
-  const toggleSwitch = () => setIsReps(previousState => !previousState);
+  const toggleIsReps = () => setIsReps(previousState => !previousState);
 
   return (
     <View>
@@ -115,7 +161,7 @@ const Record = () => {
       <Switch
         trackColor={{false: '#767577', true: '#81b0ff'}}
         thumbColor={isReps ? '#f5dd4b' : '#f4f3f4'}
-        onValueChange={toggleSwitch}
+        onValueChange={toggleIsReps}
         value={isReps}
       />
       <Text>time</Text>
