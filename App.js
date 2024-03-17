@@ -1,57 +1,60 @@
 import { StatusBar } from 'expo-status-bar';
 import { Pressable, StyleSheet, Text, TextInput, View, Switch } from 'react-native';
-import {NavigationContainer} from '@react-navigation/native';
-import {createNativeStackNavigator} from '@react-navigation/native-stack';
+import { NavigationContainer } from '@react-navigation/native';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useState, useEffect } from 'react';
 import * as SQLite from 'expo-sqlite';
 
 const Stack = createNativeStackNavigator();
 
-export default function App(){
+export default function App() {
 
   useEffect(
-    
+
     () => {
 
-    const db = SQLite.openDatabase('phasic.db');
-  
-    db.transaction(tx => {
-      tx.executeSql(
-        'CREATE TABLE IF NOT EXISTS exerciseSet (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, reps INTEGER)'
-      );
-    });
-  }
-  );
+      const db = SQLite.openDatabase('phasic.db');
 
-  const insertSetIntoDB = (name, reps) => {
-    db.transaction(tx => {
-      tx.executeSql(
-        'INSERT INTO exerciseSet (name, reps) VALUES (?, ?)', [name, reps],
-        (_, result) => {
-          console.log('Rows affected:', result.rowsAffected);
-        },
-        (_, error) => {
-          console.log('Error inserting data:', error);
-        }
-      );
-    });      
-    };
-
-    const displayExercisesData = (name) => {
       db.transaction(tx => {
         tx.executeSql(
-          'SELECT * FROM exerciseSet WHERE name = "?"',
-          [name],
-          (_, { rows }) => {
-            const data = rows._array;
-            console.log(data);
-          },
-          (_, error) => {
-            console.log('Error displaying result:', error);
-          }
+          'CREATE TABLE IF NOT EXISTS exercise (exerciseID INTEGER PRIMARY KEY AUTOINCREMENT, exerciseName TEXT'
+        );
+        tx.executeSql(
+          'CREATE TABLE IF NOT EXISTS exerciseSet (setID INTEGER PRIMARY KEY AUTOINCREMENT, exerciseID TEXT, reps INTEGER, weight REAL, duration REAL, FOREIGN KEY exerciseID REFERENCES exercise(exerciseID)'
         );
       });
-      };  
+    }
+  );
+
+  // const insertSetIntoDB = (name, reps) => {
+  //   db.transaction(tx => {
+  //     tx.executeSql(
+  //       'INSERT INTO exerciseSet (name, reps) VALUES (?, ?)', [name, reps],
+  //       (_, result) => {
+  //         console.log('Rows affected:', result.rowsAffected);
+  //       },
+  //       (_, error) => {
+  //         console.log('Error inserting data:', error);
+  //       }
+  //     );
+  //   });
+  // };
+
+  // const displayExercisesData = (name) => {
+  //   db.transaction(tx => {
+  //     tx.executeSql(
+  //       'SELECT * FROM exerciseSet WHERE name = "?"',
+  //       [name],
+  //       (_, { rows }) => {
+  //         const data = rows._array;
+  //         console.log(data);
+  //       },
+  //       (_, error) => {
+  //         console.log('Error displaying result:', error);
+  //       }
+  //     );
+  //   });
+  // };
 
   return (
     <NavigationContainer>
@@ -68,22 +71,22 @@ export default function App(){
   );
 };
 
-const Home = ({navigation}) => {
+const Home = ({ navigation }) => {
 
-handleRecordPress = () => {
-  navigation.navigate('Record')
-}
+  handleRecordPress = () => {
+    navigation.navigate('Record')
+  }
 
-handleDisplayPress = () => {
-  navigation.navigate('Display')
-}
+  handleDisplayPress = () => {
+    navigation.navigate('Display')
+  }
 
-handleContactPress = () => {
-  navigation.navigate('Contact')
-}
+  handleContactPress = () => {
+    navigation.navigate('Contact')
+  }
 
   return (
-      <View style={styles.container}>
+    <View style={styles.container}>
       <View>
         <Text>Phasic Logo</Text>
       </View>
@@ -96,7 +99,7 @@ handleContactPress = () => {
         <Text>Don't Be Basic, Be Phasic</Text>
         <Text>
           Grow phasic, cycle by cycle using our app to record your workouts and track your progress. Focus and log progress
-          on factors such as absolute strength, relative strength, cardiovascular endurance and work capacity, 
+          on factors such as absolute strength, relative strength, cardiovascular endurance and work capacity,
           using our smooth interface to efficiently input your work sets mid -or post- workout. Share your numbers with your
           coach, clients, teammates or friends for feedback, accountability and motivation, and watch your performance
           climb step-by-step, phase by phase.
@@ -109,24 +112,58 @@ handleContactPress = () => {
       </View>
       <View>
         <Pressable onPress={handleContactPress}>
-        <Text>Contact</Text>
-        </Pressable>      
+          <Text>Contact</Text>
+        </Pressable>
       </View>
       <StatusBar style="auto" />
     </View>
   );
 }
 
+const isExerciseNameValid = (name) => {
+  if(name == ''){
+    console.log('Empty exerciseName')
+    return false
+  }
+  if(name.length > 50){
+    console.log('exerciseName above 50 chars')
+    return false
+  }
+  if((/[a^-z0-9]/gi).test(name)){
+    console.log('Attempted to add forbidden chars')
+    return false
+  }
+  return true
+};
+
+const isExerciseDistanceValid = (name) => {
+  // checks
+  return true 
+};
+
+const isExerciseDurationValid = (name) => {
+  // checks
+  return true
+};
+
 const ExerciseForTime = () => {
   const [exerciseName, setExerciseName] = useState('');
   const [exerciseDistance, setExerciseDistance] = useState('')
   const [exerciseDuration, setExerciseDuration] = useState('');
+  const handleAddSet = () => {
+    if (isExerciseNameValid(exerciseName) && isExerciseDistanceValid(exerciseDistance) && isExerciseDurationValid(exerciseDuration)) {
+      console.log('Added set')
+    }
+  }
 
   return (
     <View>
-      <TextInput onChangeText={setExerciseName} value={exerciseName} placeholder='exercise name'/>
-      <TextInput onChangeText={setExerciseDistance} value={exerciseDistance} placeholder='distance' keyboardType='numeric'/>
-      <TextInput onChangeText={setExerciseDuration} value={exerciseDuration} placeholder='duration' keyboardType='numeric'/>
+      <TextInput onChangeText={setExerciseName} value={exerciseName} placeholder='exercise name' />
+      <TextInput onChangeText={setExerciseDistance} value={exerciseDistance} placeholder='distance' keyboardType='numeric' />
+      <TextInput onChangeText={setExerciseDuration} value={exerciseDuration} placeholder='duration' keyboardType='numeric' />
+      <Pressable onPress={handleAddSet}>
+        <Text>Add Set</Text>
+      </Pressable>
     </View>
   )
 }
@@ -138,12 +175,12 @@ const ExerciseForReps = () => {
 
   return (
     <View>
-      <TextInput onChangeText={setExerciseName} value={exerciseName} placeholder='exercise name'/>
-      <TextInput onChangeText={setExerciseReps} value={exerciseReps} placeholder='reps' keyboardType='numeric'/>
-      <TextInput onChangeText={setExerciseLoad} value={exerciseLoad} placeholder='kg' keyboardType='numeric'/>
+      <TextInput onChangeText={setExerciseName} value={exerciseName} placeholder='exercise name' />
+      <TextInput onChangeText={setExerciseReps} value={exerciseReps} placeholder='reps' keyboardType='numeric' />
+      <TextInput onChangeText={setExerciseLoad} value={exerciseLoad} placeholder='kg' keyboardType='numeric' />
     </View>
   )
-} 
+}
 
 
 const Record = () => {
@@ -155,7 +192,7 @@ const Record = () => {
     <View>
       <Text>reps</Text>
       <Switch
-        trackColor={{false: 'grey', true: 'grey'}}
+        trackColor={{ false: 'grey', true: 'grey' }}
         thumbColor={isReps ? 'black' : 'black'}
         onValueChange={toggleIsReps}
         value={isReps}
