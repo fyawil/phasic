@@ -121,28 +121,50 @@ const Home = ({ navigation }) => {
 }
 
 const isExerciseNameValid = (name) => {
-  if(name == ''){
+  if(name.trim() == ''){
     console.log('Empty exerciseName')
     return false
-  }
+  };
   if(name.length > 50){
     console.log('exerciseName above 50 chars')
     return false
-  }
-  if((/[a^-z0-9]/gi).test(name)){
+  };
+  if((/[^a-z0-9\s]/gi).test(name)){
     console.log('Attempted to add forbidden chars')
     return false
-  }
+  };
   return true
 };
 
-const isExerciseDistanceValid = (name) => {
-  // checks
+const isExerciseDistanceValid = (distance) => {
+  if(!/^(\d+(\.\d+)?|\.\d+)$/.test(distance)){
+    console.log("distance input is not valid, positive number")
+    return false
+  };
   return true 
 };
 
 const isExerciseDurationValid = (name) => {
-  // checks
+  if(!/^(\d+(\.\d+)?|\.\d+)$/.test(distance)){
+    console.log("Duration input is not valid, positive number")
+    return false
+  };
+  return true
+};
+
+const isExerciseRepsValid = (reps) => {
+  if(!/^[1-9]\d*$/.test(reps)){
+    console.log("reps input is not valid, whole, positive number")
+    return false
+  };
+  return true
+}
+
+const isExerciseLoadValid = (load) => {
+  if(!/^(\d+(\.\d+)?|\.\d+)$/.test(load) && load.trim() !== "0"){
+    console.log("Load input is not valid, non-negative number")
+    return false
+  };
   return true
 };
 
@@ -150,7 +172,8 @@ const ExerciseForTime = () => {
   const [exerciseName, setExerciseName] = useState('');
   const [exerciseDistance, setExerciseDistance] = useState('')
   const [exerciseDuration, setExerciseDuration] = useState('');
-  const handleAddSet = () => {
+  
+  const handleAddForTimeSet = () => {
     if (isExerciseNameValid(exerciseName) && isExerciseDistanceValid(exerciseDistance) && isExerciseDurationValid(exerciseDuration)) {
       console.log('Added set')
     }
@@ -161,7 +184,7 @@ const ExerciseForTime = () => {
       <TextInput onChangeText={setExerciseName} value={exerciseName} placeholder='exercise name' />
       <TextInput onChangeText={setExerciseDistance} value={exerciseDistance} placeholder='distance' keyboardType='numeric' />
       <TextInput onChangeText={setExerciseDuration} value={exerciseDuration} placeholder='duration' keyboardType='numeric' />
-      <Pressable onPress={handleAddSet}>
+      <Pressable onPress={handleAddForTimeSet}>
         <Text>Add Set</Text>
       </Pressable>
     </View>
@@ -173,11 +196,20 @@ const ExerciseForReps = () => {
   const [exerciseReps, setExerciseReps] = useState('');
   const [exerciseLoad, setExerciseLoad] = useState('');
 
+  const handleAddForRepsSet = () => {
+    if (isExerciseNameValid(exerciseName) && isExerciseRepsValid(exerciseReps) && isExerciseLoadValid(exerciseLoad)) {
+      console.log('Added set')
+    }
+  }
+
   return (
     <View>
       <TextInput onChangeText={setExerciseName} value={exerciseName} placeholder='exercise name' />
       <TextInput onChangeText={setExerciseReps} value={exerciseReps} placeholder='reps' keyboardType='numeric' />
       <TextInput onChangeText={setExerciseLoad} value={exerciseLoad} placeholder='kg' keyboardType='numeric' />
+      <Pressable onPress={handleAddForRepsSet}>
+        <Text>Add Set</Text>
+      </Pressable>
     </View>
   )
 }
