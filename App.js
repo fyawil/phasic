@@ -6,55 +6,37 @@ import { useState, useEffect } from 'react';
 import * as SQLite from 'expo-sqlite';
 
 const Stack = createNativeStackNavigator();
+const db = SQLite.openDatabase('phasic.db');
 
 export default function App() {
 
-  useEffect(
+  useEffect(() => {
 
-    () => {
+    // db.transaction(tx => {
+    //     tx.executeSql(
+    //         'DROP TABLE exercise'
+    //     );
+    // });
 
-      const db = SQLite.openDatabase('phasic.db');
-
-      db.transaction(tx => {
+    db.transaction(tx => {
         tx.executeSql(
-          'CREATE TABLE IF NOT EXISTS exercise (exerciseID INTEGER PRIMARY KEY AUTOINCREMENT, exerciseName TEXT'
+            'CREATE TABLE IF NOT EXISTS exercise (exerciseID INTEGER PRIMARY KEY AUTOINCREMENT, exerciseName TEXT)'
         );
+    });
+  
+    // db.transaction(tx => {
+    //     tx.executeSql(
+    //         'DROP TABLE exerciseSet'
+    //     );
+    // });
+
+    db.transaction(tx => {
         tx.executeSql(
-          'CREATE TABLE IF NOT EXISTS exerciseSet (setID INTEGER PRIMARY KEY AUTOINCREMENT, exerciseID TEXT, reps INTEGER, weight REAL, duration REAL, FOREIGN KEY exerciseID REFERENCES exercise(exerciseID)'
+            'CREATE TABLE IF NOT EXISTS exerciseSet (setID INTEGER PRIMARY KEY AUTOINCREMENT, exerciseID INTEGER, exerciseReps INTEGER, exerciseWeight REAL, exerciseDuration REAL, exerciseDistance REAL, FOREIGN KEY (exerciseID) REFERENCES exercise(exerciseID))'
         );
-      });
-    }
-  );
-
-  // const insertSetIntoDB = (name, reps) => {
-  //   db.transaction(tx => {
-  //     tx.executeSql(
-  //       'INSERT INTO exerciseSet (name, reps) VALUES (?, ?)', [name, reps],
-  //       (_, result) => {
-  //         console.log('Rows affected:', result.rowsAffected);
-  //       },
-  //       (_, error) => {
-  //         console.log('Error inserting data:', error);
-  //       }
-  //     );
-  //   });
-  // };
-
-  // const displayExercisesData = (name) => {
-  //   db.transaction(tx => {
-  //     tx.executeSql(
-  //       'SELECT * FROM exerciseSet WHERE name = "?"',
-  //       [name],
-  //       (_, { rows }) => {
-  //         const data = rows._array;
-  //         console.log(data);
-  //       },
-  //       (_, error) => {
-  //         console.log('Error displaying result:', error);
-  //       }
-  //     );
-  //   });
-  // };
+    });
+    
+}, []);
 
   return (
     <NavigationContainer>
@@ -144,8 +126,8 @@ const isExerciseDistanceValid = (distance) => {
   return true 
 };
 
-const isExerciseDurationValid = (name) => {
-  if(!/^(\d+(\.\d+)?|\.\d+)$/.test(distance)){
+const isExerciseDurationValid = (duration) => {
+  if(!/^(\d+(\.\d+)?|\.\d+)$/.test(duration)){
     console.log("Duration input is not valid, positive number")
     return false
   };
@@ -172,9 +154,76 @@ const ExerciseForTime = () => {
   const [exerciseName, setExerciseName] = useState('');
   const [exerciseDistance, setExerciseDistance] = useState('')
   const [exerciseDuration, setExerciseDuration] = useState('');
-  
-  const handleAddForTimeSet = () => {
+
+
+  const handleAddSet = () => {
     if (isExerciseNameValid(exerciseName) && isExerciseDistanceValid(exerciseDistance) && isExerciseDurationValid(exerciseDuration)) {
+      // Check if exercise in exercise table already, if so, break out of this if statement!!!!!!!!
+      db.transaction(tx => {
+        tx.executeSql(
+            'INSERT INTO exercise(exerciseName) VALUES (?)',
+            [exerciseName],
+            () => {},
+            (_, error) => {
+                console.error('Error inserting set into exercise table:', error);
+            }
+        );
+    });
+
+
+db.transaction(tx => {
+    tx.executeSql(
+        'SELECT exerciseID FROM exercise WHERE exerciseName = ?',
+        [exerciseName],
+        (_, { rows }) => {
+            const exerciseID = rows._array[0].exerciseID;
+            
+            // Inside this callback, execute the second transaction
+            tx.executeSql(
+                'INSERT INTO exerciseSet(exerciseID, exerciseDuration, exerciseDistance) VALUES (?, ?, ?)',
+                [exerciseID, exerciseDuration, exerciseDistance],
+                () => {
+                    // Success callback for the second transaction
+                    console.log('Exercise set inserted successfully.');
+                },
+                (_, error) => {
+                    console.error('Error inserting set into exerciseSet table:', error);
+                }
+            );
+        },
+        (_, error) => {
+            console.error('Error extracting exerciseID from:', error);
+        }
+    );
+});
+
+
+        db.transaction(tx => {
+        tx.executeSql(
+            'SELECT * FROM exercise',
+            [],
+            (_, { rows }) => {
+                console.log(rows)
+            },
+            (_, error) => {
+                console.error('Error selecting from exercise:', error);
+            }
+        );
+    });
+
+            db.transaction(tx => {
+        tx.executeSql(
+            'SELECT * FROM exerciseSet',
+            [],
+            (_, { rows }) => {
+                console.log(rows)
+            },
+            (_, error) => {
+                console.error('Error selecting from exerciseSet:', error);
+            }
+        );
+    });
+
       console.log('Added set')
     }
   }
@@ -184,7 +233,7 @@ const ExerciseForTime = () => {
       <TextInput onChangeText={setExerciseName} value={exerciseName} placeholder='exercise name' />
       <TextInput onChangeText={setExerciseDistance} value={exerciseDistance} placeholder='distance' keyboardType='numeric' />
       <TextInput onChangeText={setExerciseDuration} value={exerciseDuration} placeholder='duration' keyboardType='numeric' />
-      <Pressable onPress={handleAddForTimeSet}>
+      <Pressable onPress={handleAddSet}>
         <Text>Add Set</Text>
       </Pressable>
     </View>
@@ -196,20 +245,11 @@ const ExerciseForReps = () => {
   const [exerciseReps, setExerciseReps] = useState('');
   const [exerciseLoad, setExerciseLoad] = useState('');
 
-  const handleAddForRepsSet = () => {
-    if (isExerciseNameValid(exerciseName) && isExerciseRepsValid(exerciseReps) && isExerciseLoadValid(exerciseLoad)) {
-      console.log('Added set')
-    }
-  }
-
   return (
     <View>
       <TextInput onChangeText={setExerciseName} value={exerciseName} placeholder='exercise name' />
       <TextInput onChangeText={setExerciseReps} value={exerciseReps} placeholder='reps' keyboardType='numeric' />
       <TextInput onChangeText={setExerciseLoad} value={exerciseLoad} placeholder='kg' keyboardType='numeric' />
-      <Pressable onPress={handleAddForRepsSet}>
-        <Text>Add Set</Text>
-      </Pressable>
     </View>
   )
 }
