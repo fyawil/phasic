@@ -158,7 +158,7 @@ const ExerciseForTime = () => {
 
   const handleAddSet = () => {
     if (isExerciseNameValid(exerciseName) && isExerciseDistanceValid(exerciseDistance) && isExerciseDurationValid(exerciseDuration)) {
-      // Check if exercise in exercise table already, if so, break out of this if statement!!!!!!!!
+      // Check if the exercise is in exercise table already, if so, break out of this if statement!!!!!!!!
       db.transaction(tx => {
         tx.executeSql(
             'INSERT INTO exercise(exerciseName) VALUES (?)',
