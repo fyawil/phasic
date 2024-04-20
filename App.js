@@ -12,11 +12,11 @@ export default function App() {
 
   useEffect(() => {
 
-    // db.transaction(tx => {
-    //     tx.executeSql(
-    //         'DROP TABLE exercise'
-    //     );
-    // });
+    db.transaction(tx => {
+        tx.executeSql(
+            'DROP TABLE exercise'
+        );
+    });
 
     db.transaction(tx => {
         tx.executeSql(
@@ -24,11 +24,11 @@ export default function App() {
         );
     });
   
-    // db.transaction(tx => {
-    //     tx.executeSql(
-    //         'DROP TABLE exerciseSet'
-    //     );
-    // });
+    db.transaction(tx => {
+        tx.executeSql(
+            'DROP TABLE exerciseSet'
+        );
+    });
 
     db.transaction(tx => {
         tx.executeSql(
@@ -155,48 +155,85 @@ const ExerciseForTime = () => {
   const [exerciseDistance, setExerciseDistance] = useState('')
   const [exerciseDuration, setExerciseDuration] = useState('');
 
-
   const handleAddSet = () => {
     if (isExerciseNameValid(exerciseName) && isExerciseDistanceValid(exerciseDistance) && isExerciseDurationValid(exerciseDuration)) {
-      // Check if the exercise is in exercise table already, if so, break out of this if statement!!!!!!!!
+
+
       db.transaction(tx => {
         tx.executeSql(
-            'INSERT INTO exercise(exerciseName) VALUES (?)',
-            [exerciseName],
-            () => {},
-            (_, error) => {
-                console.error('Error inserting set into exercise table:', error);
-            }
-        );
-    });
-
-
-db.transaction(tx => {
-    tx.executeSql(
-        'SELECT exerciseID FROM exercise WHERE exerciseName = ?',
-        [exerciseName],
-        (_, { rows }) => {
-            const exerciseID = rows._array[0].exerciseID;
-            
-            // Inside this callback, execute the second transaction
-            tx.executeSql(
-                'INSERT INTO exerciseSet(exerciseID, exerciseDuration, exerciseDistance) VALUES (?, ?, ?)',
-                [exerciseID, exerciseDuration, exerciseDistance],
-                () => {
-                    // Success callback for the second transaction
-                    console.log('Exercise set inserted successfully.');
-                },
+          'SELECT COUNT(*) FROM exercise WHERE exerciseName = ?',
+          [exerciseName],
+          (_, result) => {
+            const count = result.rows.item(0)['COUNT(*)'];
+            if (count === 0) {
+              tx.executeSql(
+                'INSERT INTO exercise(exerciseName) VALUES (?)',
+                [exerciseName],
+                () => {},
                 (_, error) => {
-                    console.error('Error inserting set into exerciseSet table:', error);
+                  console.error('Error inserting exerciseName into exercise table:', error);
                 }
-            );
-        },
-        (_, error) => {
-            console.error('Error extracting exerciseID from:', error);
-        }
-    );
-});
+              );
+            } else {
+              console.log('Exercise already exists in the database');
+            }
+          },
+          (_, error) => {
+            console.error('Error executing SQL query:', error);
+          }
+        );
+      });
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  db.transaction(tx => {
+      tx.executeSql(
+          'SELECT exerciseID FROM exercise WHERE exerciseName = ?',
+          [exerciseName],
+          (_, { rows }) => {
+              const exerciseID = rows._array[0].exerciseID;
+              
+              // Inside this callback, execute the second transaction
+              tx.executeSql(
+                  'INSERT INTO exerciseSet(exerciseID, exerciseDuration, exerciseDistance) VALUES (?, ?, ?)',
+                  [exerciseID, exerciseDuration, exerciseDistance],
+                  () => {
+                      // Success callback for the second transaction
+                      console.log('Exercise set inserted successfully.');
+                  },
+                  (_, error) => {
+                      console.error('Error inserting set into exerciseSet table:', error);
+                  }
+              );
+          },
+          (_, error) => {
+              console.error('Error extracting exerciseID from:', error);
+          }
+      );
+  });
 
         db.transaction(tx => {
         tx.executeSql(
