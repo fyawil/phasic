@@ -32,7 +32,7 @@ export default function App() {
 
     db.transaction(tx => {
         tx.executeSql(
-            'CREATE TABLE IF NOT EXISTS exerciseSet (setID INTEGER PRIMARY KEY AUTOINCREMENT, exerciseID INTEGER, exerciseReps INTEGER, exerciseWeight REAL, exerciseDuration REAL, exerciseDistance REAL, FOREIGN KEY (exerciseID) REFERENCES exercise(exerciseID))'
+            'CREATE TABLE IF NOT EXISTS exerciseSet (setID INTEGER PRIMARY KEY AUTOINCREMENT, exerciseID INTEGER, exerciseReps INTEGER, exerciseLoad REAL, exerciseDuration REAL, exerciseDistance REAL, FOREIGN KEY (exerciseID) REFERENCES exercise(exerciseID))'
         );
     });
     
@@ -184,31 +184,6 @@ const ExerciseForTime = () => {
         );
       });
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
   db.transaction(tx => {
       tx.executeSql(
           'SELECT exerciseID FROM exercise WHERE exerciseName = ?',
@@ -282,11 +257,98 @@ const ExerciseForReps = () => {
   const [exerciseReps, setExerciseReps] = useState('');
   const [exerciseLoad, setExerciseLoad] = useState('');
 
+  const handleAddSet = () => {
+    if (isExerciseNameValid(exerciseName) && isExerciseRepsValid(exerciseReps) && isExerciseLoadValid(exerciseLoad)) {
+
+      db.transaction(tx => {
+        tx.executeSql(
+          'SELECT COUNT(*) FROM exercise WHERE exerciseName = ?',
+          [exerciseName],
+          (_, result) => {
+            const count = result.rows.item(0)['COUNT(*)'];
+            if (count === 0) {
+              tx.executeSql(
+                'INSERT INTO exercise(exerciseName) VALUES (?)',
+                [exerciseName],
+                () => {},
+                (_, error) => {
+                  console.error('Error inserting exerciseName into exercise table:', error);
+                }
+              );
+            } else {
+              console.log('Exercise already exists in the database');
+            }
+          },
+          (_, error) => {
+            console.error('Error executing SQL query:', error);
+          }
+        );
+      });
+
+  db.transaction(tx => {
+      tx.executeSql(
+          'SELECT exerciseID FROM exercise WHERE exerciseName = ?',
+          [exerciseName],
+          (_, { rows }) => {
+              const exerciseID = rows._array[0].exerciseID;
+              
+              // Inside this callback, execute the second transaction
+              tx.executeSql(
+                  'INSERT INTO exerciseSet(exerciseID, exerciseReps, exerciseLoad) VALUES (?, ?, ?)',
+                  [exerciseID, exerciseReps, exerciseLoad],
+                  () => {
+                      // Success callback for the second transaction
+                      console.log('Exercise set inserted successfully.');
+                  },
+                  (_, error) => {
+                      console.error('Error inserting set into exerciseSet table:', error);
+                  }
+              );
+          },
+          (_, error) => {
+              console.error('Error extracting exerciseID from:', error);
+          }
+      );
+  });
+
+        db.transaction(tx => {
+        tx.executeSql(
+            'SELECT * FROM exercise',
+            [],
+            (_, { rows }) => {
+                console.log(rows)
+            },
+            (_, error) => {
+                console.error('Error selecting from exercise:', error);
+            }
+        );
+    });
+
+            db.transaction(tx => {
+        tx.executeSql(
+            'SELECT * FROM exerciseSet',
+            [],
+            (_, { rows }) => {
+                console.log(rows)
+            },
+            (_, error) => {
+                console.error('Error selecting from exerciseSet:', error);
+            }
+        );
+    });
+
+      console.log('Added set')
+    }
+  }
+
   return (
     <View>
       <TextInput onChangeText={setExerciseName} value={exerciseName} placeholder='exercise name' />
       <TextInput onChangeText={setExerciseReps} value={exerciseReps} placeholder='reps' keyboardType='numeric' />
       <TextInput onChangeText={setExerciseLoad} value={exerciseLoad} placeholder='kg' keyboardType='numeric' />
+      <Pressable onPress={handleAddSet}>
+        <Text>Add Set</Text>
+      </Pressable>
     </View>
   )
 }
