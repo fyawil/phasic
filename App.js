@@ -55,7 +55,23 @@ const InputPage = () => {
   const [exerciseDistance, setExerciseDistance] = useState('');
 
   const handlePressSubmitSet = async () => {
-    console.log(exerciseName)
+    db = await SQLite.openDatabaseAsync('phasic_log');
+
+    await db.runAsync('INSERT INTO exercise (exerciseName) VALUES (?)', exerciseName);
+
+    const exerciseID = await db.getFirstAsync(` SELECT exerciseID FROM exercise WHERE exerciseName = ?`, exerciseName);
+    await db.runAsync('INSERT INTO exerciseSet (exerciseID, exerciseReps, exerciseWeight, exerciseDuration, exerciseDistance) VALUES (?, ?, ?, ?, ?)', exerciseID['exerciseID'], exerciseReps, exerciseWeight, exerciseDuration, exerciseDistance);
+    
+    // FOR TESTING
+    const exerciseTableContents = await db.getAllAsync('SELECT * FROM exercise');
+    for (const row of exerciseTableContents) {
+      console.log(row.exerciseID, row.exerciseName);
+    }
+    const exerciseSetTableContents = await db.getAllAsync('SELECT * FROM exerciseSet');
+    for (const row of exerciseSetTableContents) {
+      console.log(row.setID, row.exerciseID, row.exerciseReps, row.exerciseWeight, row.exerciseDuration, row.exerciseDistance);
+    }
+    ///////////////////////////////
   }
 
   return (
