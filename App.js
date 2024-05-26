@@ -1,67 +1,92 @@
 import { StatusBar } from 'expo-status-bar';
-import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable, Text, TextInput, View } from 'react-native';
 import { useState, useEffect } from 'react';
 import * as SQLite from 'expo-sqlite';
 
 export default function App() {
-  const [isDisplayPageShown, setIsDisplayPageShown] = useState(false);
-  const [result, setResult] = useState([]);
+  // State variable indicating whether display page or input page is shown
+  const [isStatPageShown, setIsStatPageShown] = useState(false);
 
+  // Creates the database tables
   useEffect(() => {
     const initDb = async () => {
-      const db = await SQLite.openDatabaseAsync('test_db');
-
+      const db = await SQLite.openDatabaseAsync('phasic_log');
       await db.execAsync(`
-        CREATE TABLE IF NOT EXISTS test (id INTEGER PRIMARY KEY NOT NULL, value TEXT NOT NULL, intValue INTEGER);
-        INSERT INTO test (value, intValue) VALUES ('test1', 123);
-        INSERT INTO test (value, intValue) VALUES ('test2', 456);
-        INSERT INTO test (value, intValue) VALUES ('test3', 789);
+      CREATE TABLE IF NOT EXISTS exercise (
+        exerciseID INTEGER PRIMARY KEY AUTOINCREMENT, 
+        exerciseName TEXT
+        ); 
+      CREATE TABLE IF NOT EXISTS exerciseSet (
+        setID INTEGER PRIMARY KEY AUTOINCREMENT, 
+        exerciseID INTEGER, 
+        exerciseReps INTEGER, 
+        exerciseWeight REAL, 
+        exerciseDuration REAL, 
+        exerciseDistance REAL, 
+        FOREIGN KEY (exerciseID) REFERENCES exercise(exerciseID)
+        );
       `);
-
-      const res = await db.getAllAsync('SELECT * FROM test');
-      setResult(res);
     };
-
     initDb();
   }, []);
 
   return (
     <View>
+      {/* Blacks out the system status bar and makes the app screen start where it ends */}
       <StatusBar hidden />
-      <NavigationBar setIsDisplayPageShown={setIsDisplayPageShown} />
 
+      <NavigationBar setIsStatPageShown={setIsStatPageShown} />
+
+      {/* Displays the input page is the stat page is not shown and vice versa */}
       <View>
-        {!isDisplayPageShown && <InputPage result={result} />}
-        {isDisplayPageShown && <DisplayPage />}
+        {!isStatPageShown && <InputPage />}
+        {isStatPageShown && <StatPage />}
       </View>
     </View>
   );
 }
 
-const InputPage = ({ result }) => {
+const InputPage = () => {
+  // State variables tracking the inputs of the user when recording their workout set
+  const [exerciseName, setExerciseName] = useState('');
+  const [exerciseReps, setExerciseReps] = useState('');
+  const [exerciseWeight, setExerciseWeight] = useState('');
+  const [exerciseDuration, setExerciseDuration] = useState('');
+  const [exerciseDistance, setExerciseDistance] = useState('');
+
+  const handlePressSubmitSet = async () => {
+    console.log(exerciseName)
+  }
+
   return (
     <>
-      <Text>Input Page</Text>
-      <Text>{JSON.stringify(result)}</Text>
+      <TextInput value={exerciseName} onChangeText={setExerciseName} />
+      <TextInput value={exerciseReps} onChangeText={setExerciseReps}/>
+      <TextInput value={exerciseWeight} onChangeText={setExerciseWeight}/>
+      <TextInput value={exerciseDuration} onChangeText={setExerciseDuration}/>
+      <TextInput value={exerciseDistance} onChangeText={setExerciseDistance}/>
+      <Pressable onPress={handlePressSubmitSet}>
+        <Text>Submit Set</Text>
+      </Pressable>
     </>
   );
 };
 
-const DisplayPage = () => {
-  return <Text>Display Page</Text>;
+const StatPage = () => {
+  return <Text>Stat Page</Text>;
 };
 
-const NavigationBar = ({ setIsDisplayPageShown }) => {
-  const handlePressInputPage = () => setIsDisplayPageShown(false);
-  const handlePressDisplayPage = () => setIsDisplayPageShown(true);
+const NavigationBar = ({ setIsStatPageShown }) => {
+  const handlePressInputPage = () => setIsStatPageShown(false);
+  const handlePressStatPage = () => setIsStatPageShown(true);
 
   return (
     <View style={{ display: 'flex', flexDirection: 'row', justifyContent: 'space-evenly' }}>
       <Pressable onPress={handlePressInputPage}>
         <Text>Input Page</Text>
       </Pressable>
-      <Pressable onPress={handlePressDisplayPage}>
-        <Text>Display Page</Text>
+      <Pressable onPress={handlePressStatPage}>
+        <Text>Stat Page</Text>
       </Pressable>
     </View>
   );
