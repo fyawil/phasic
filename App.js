@@ -35,6 +35,7 @@ export default function App() {
       {/* Blacks out the system status bar and makes the app screen start where it ends */}
       <StatusBar hidden />
 
+      {/* Allows user to toggle between recording workouts and displaying stats of workouts */}
       <NavigationBar setIsStatPageShown={setIsStatPageShown} />
 
       {/* Displays the input page is the stat page is not shown and vice versa */}
@@ -42,11 +43,13 @@ export default function App() {
         {!isStatPageShown && <InputPage />}
         {isStatPageShown && <StatPage />}
       </View>
+
     </View>
   );
 }
 
 const InputPage = () => {
+
   // State variables tracking the inputs of the user when recording their workout set
   const [exerciseName, setExerciseName] = useState('');
   const [exerciseReps, setExerciseReps] = useState('');
@@ -54,33 +57,30 @@ const InputPage = () => {
   const [exerciseDuration, setExerciseDuration] = useState('');
   const [exerciseDistance, setExerciseDistance] = useState('');
 
+  // Inserts workout set details into the database
   const handlePressSubmitSet = async () => {
+    // Opens the database
     db = await SQLite.openDatabaseAsync('phasic_log');
-
-    await db.runAsync('INSERT INTO exercise (exerciseName) VALUES (?)', exerciseName);
-
+    // Adds exercise to exercise table if it does not exist in it already
+    const res = await db.getAllAsync('SELECT exerciseName FROM exercise');
+    const exercisesInDB = res.map(ex => ex.exerciseName);
+    if(exercisesInDB.indexOf(exerciseName) == -1){
+          await db.runAsync('INSERT INTO exercise (exerciseName) VALUES (?)', exerciseName);
+    }
+    // Adds set details to the exerciseSet table
     const exerciseID = await db.getFirstAsync(` SELECT exerciseID FROM exercise WHERE exerciseName = ?`, exerciseName);
     await db.runAsync('INSERT INTO exerciseSet (exerciseID, exerciseReps, exerciseWeight, exerciseDuration, exerciseDistance) VALUES (?, ?, ?, ?, ?)', exerciseID['exerciseID'], exerciseReps, exerciseWeight, exerciseDuration, exerciseDistance);
-    
-    // FOR TESTING
-    const exerciseTableContents = await db.getAllAsync('SELECT * FROM exercise');
-    for (const row of exerciseTableContents) {
-      console.log(row.exerciseID, row.exerciseName);
-    }
-    const exerciseSetTableContents = await db.getAllAsync('SELECT * FROM exerciseSet');
-    for (const row of exerciseSetTableContents) {
-      console.log(row.setID, row.exerciseID, row.exerciseReps, row.exerciseWeight, row.exerciseDuration, row.exerciseDistance);
-    }
-    ///////////////////////////////
   }
 
   return (
     <>
+      {/* Input fields for the set details */}
       <TextInput value={exerciseName} onChangeText={setExerciseName} />
       <TextInput value={exerciseReps} onChangeText={setExerciseReps}/>
       <TextInput value={exerciseWeight} onChangeText={setExerciseWeight}/>
       <TextInput value={exerciseDuration} onChangeText={setExerciseDuration}/>
       <TextInput value={exerciseDistance} onChangeText={setExerciseDistance}/>
+      {/* Submits the set to the db if pressed */}
       <Pressable onPress={handlePressSubmitSet}>
         <Text>Submit Set</Text>
       </Pressable>
@@ -98,9 +98,11 @@ const NavigationBar = ({ setIsStatPageShown }) => {
 
   return (
     <View style={{ display: 'flex', flexDirection: 'row', justifyContent: 'space-evenly' }}>
+      {/* Switches screen to input page if pressed */}
       <Pressable onPress={handlePressInputPage}>
         <Text>Input Page</Text>
       </Pressable>
+      {/* Switches screen to stat page if pressed */}
       <Pressable onPress={handlePressStatPage}>
         <Text>Stat Page</Text>
       </Pressable>
