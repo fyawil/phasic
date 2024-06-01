@@ -1,7 +1,8 @@
 import { StatusBar } from 'expo-status-bar';
-import { Pressable, Text, TextInput, View } from 'react-native';
+import { StyleSheet, Pressable, Text, TextInput, View } from 'react-native';
 import { useState, useEffect } from 'react';
 import * as SQLite from 'expo-sqlite';
+import { Dropdown } from 'react-native-element-dropdown';
 
 export default function App() {
   // State variable indicating whether display page or input page is shown
@@ -89,7 +90,33 @@ const InputPage = () => {
 };
 
 const StatPage = () => {
-  return <Text>Stat Page</Text>;
+
+  const [displayedExercise, setDisplayedExercise] = useState(null)
+  const [data, setData] = useState([]);
+
+  useEffect(() => {
+    const extractExerciseNamesFromDB = async () => {
+    // Opens the database
+    db = await SQLite.openDatabaseAsync('phasic_log');
+    // Adds exercise to exercise table if it does not exist in it already
+    const res = await db.getAllAsync('SELECT exerciseName FROM exercise');
+    setData(res.map(ex => ({label: ex.exerciseName, value: ex.exerciseName})));
+    }
+    extractExerciseNamesFromDB()
+  })
+  return (
+    <View>
+      <Dropdown
+        data={data}
+        labelField="label"
+        valueField="value"
+        onChange={item => {
+          setDisplayedExercise(item.value);
+        }}
+      />
+      <Text>{displayedExercise}</Text>
+    </View>
+  )
 };
 
 const NavigationBar = ({ setIsStatPageShown }) => {
