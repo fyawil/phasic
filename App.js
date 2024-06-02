@@ -3,6 +3,7 @@ import { StyleSheet, Pressable, Text, TextInput, View } from 'react-native';
 import { useState, useEffect } from 'react';
 import * as SQLite from 'expo-sqlite';
 import { Dropdown } from 'react-native-element-dropdown';
+import { LineChart } from "react-native-chart-kit";
 
 export default function App() {
   // State variable indicating whether display page or input page is shown
@@ -98,14 +99,15 @@ const StatPage = () => {
     const extractExerciseNamesFromDB = async () => {
     // Opens the database
     db = await SQLite.openDatabaseAsync('phasic_log');
-    // Adds exercise to exercise table if it does not exist in it already
+    // Gets current exercises in db and adds it to the dropdown menu
     const res = await db.getAllAsync('SELECT exerciseName FROM exercise');
     setData(res.map(ex => ({label: ex.exerciseName, value: ex.exerciseName})));
     }
     extractExerciseNamesFromDB()
   })
+
   return (
-    <View>
+    <>
       <Dropdown
         data={data}
         labelField="label"
@@ -114,10 +116,80 @@ const StatPage = () => {
           setDisplayedExercise(item.value);
         }}
       />
-      <Text>{displayedExercise}</Text>
-    </View>
+<ExerciseChart displayedExercise={displayedExercise}/>
+    </>
   )
 };
+
+const ExerciseChart = ({ displayedExercise }) => {
+  const [lineData, setLineData] = useState({
+    labels: ["Day 1", "Day 2", "Day 3"],
+    datasets: [
+      {
+        data: [10, 20, 30]
+      }
+    ]
+  })
+  const [yAxisUnits, setYAxisUnits] = useState("kg")
+
+  useEffect(() => {
+    const extractLineData = async (displayedExercise) => {
+      // Opens the database
+      const db = await SQLite.openDatabaseAsync('phasic_log');
+      // Extracts y-axis labels array for the line chart
+      const yAxisLabelResults = await db.getAllAsync(`
+        SELECT exerciseSet.exerciseWeight
+        FROM exerciseSet 
+        JOIN exercise ON exercise.exerciseID = exerciseSet.exerciseID
+        WHERE exercise.exerciseName = ?`, [displayedExercise]);
+      // Extracts x-axis data array for the line chart
+      const xAxisLabelResults = await db.getAllAsync(`
+        SELECT exerciseSet.exerciseReps
+        FROM exerciseSet 
+        JOIN exercise ON exercise.exerciseID = exerciseSet.exerciseID
+        WHERE exercise.exerciseName = ?`, [displayedExercise]);
+  
+      setLineData({
+        labels: yAxisLabelResults.map(res => res.exerciseWeight),
+        datasets: [
+          {
+            data: xAxisLabelResults.map(res => res.exerciseReps)
+          }
+        ]
+      });
+    }
+  
+    if (displayedExercise) {
+      extractLineData(displayedExercise);
+    }
+  }, [displayedExercise]);
+  
+
+  return (
+<View>
+  <Text>{displayedExercise}</Text>
+  <LineChart
+    data={lineData}
+    width={220}
+    height={220}
+    yAxisSuffix={yAxisUnits}
+    yAxisInterval={10}
+    chartConfig={{
+      backgroundColor: "#ffffff",
+      decimalPlaces: 0,
+      color: (opacity = 1) => `rgba(255, 255, 255, ${opacity})`,
+      labelColor: (opacity = 1) => `rgba(255, 255, 255, ${opacity})`,
+      propsForDots: {
+        r: "2",
+        strokeWidth: "2",
+        stroke: "#ffffff"
+      }
+    }}
+    bezier
+  />
+</View>
+  )
+}
 
 const NavigationBar = ({ setIsStatPageShown }) => {
   const handlePressInputPage = () => setIsStatPageShown(false);
