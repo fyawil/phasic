@@ -1,9 +1,10 @@
 import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Pressable, Text, TextInput, View } from 'react-native';
+import { SafeAreaView, Pressable, Text, TextInput, View } from 'react-native';
 import { useState, useEffect } from 'react';
 import * as SQLite from 'expo-sqlite';
 import { Dropdown } from 'react-native-element-dropdown';
 import { LineChart } from "react-native-chart-kit";
+import DateTimePicker from '@react-native-community/datetimepicker';
 
 export default function App() {
   // State variable indicating whether display page or input page is shown
@@ -21,6 +22,8 @@ export default function App() {
       CREATE TABLE IF NOT EXISTS exerciseSet (
         setID INTEGER PRIMARY KEY AUTOINCREMENT, 
         exerciseID INTEGER, 
+        exerciseDate TEXT,
+        isExerciseTimed BOOLEAN,
         exerciseReps INTEGER, 
         exerciseWeight REAL, 
         exerciseDuration REAL, 
@@ -58,6 +61,9 @@ const InputPage = () => {
   const [exerciseWeight, setExerciseWeight] = useState('');
   const [exerciseDuration, setExerciseDuration] = useState('');
   const [exerciseDistance, setExerciseDistance] = useState('');
+  const [exerciseDate, setExerciseDate] = useState(new Date());
+  const [show, setShow] = useState(false);
+  const [isExerciseTimed, setIsExerciseTimed] = useState(true)
 
   // Inserts workout set details into the database
   const handlePressSubmitSet = async () => {
@@ -71,17 +77,43 @@ const InputPage = () => {
     }
     // Adds set details to the exerciseSet table
     const exerciseID = await db.getFirstAsync(` SELECT exerciseID FROM exercise WHERE exerciseName = ?`, exerciseName);
-    await db.runAsync('INSERT INTO exerciseSet (exerciseID, exerciseReps, exerciseWeight, exerciseDuration, exerciseDistance) VALUES (?, ?, ?, ?, ?)', exerciseID['exerciseID'], exerciseReps, exerciseWeight, exerciseDuration, exerciseDistance);
+    await db.runAsync('INSERT INTO exerciseSet (exerciseID, exerciseDate, isExerciseTimed, exerciseReps, exerciseWeight, exerciseDuration, exerciseDistance) VALUES (?, ?, ?, ?, ?, ?, ?)', exerciseID['exerciseID'], exerciseDate, isExerciseTimed, exerciseReps, exerciseWeight, exerciseDuration, exerciseDistance);
+  }
+
+  const onChange = (event, selectedDate) => {
+    const currentDate = selectedDate || exerciseDate; // Ensure we handle the case where the user cancels the picker
+    setShow(false); // Hide the date picker after selection
+    setExerciseDate(currentDate); // Update the date state with the selected date
+  };
+
+  const showDatepicker = () => {
+    setShow(true); // Show the date picker when the user presses the button
+  };
+
+  const handleSwitchMode = () => {
+    setIsExerciseTimed(!isExerciseTimed)
   }
 
   return (
     <>
+      {/* Button to switch between timed and counted exercise */}
+      <Pressable onPress={handleSwitchMode}><Text>{isExerciseTimed? `Rep Mode`:`Time Mode`}</Text></Pressable>
       {/* Input fields for the set details */}
-      <TextInput value={exerciseName} onChangeText={setExerciseName} />
-      <TextInput value={exerciseReps} onChangeText={setExerciseReps}/>
-      <TextInput value={exerciseWeight} onChangeText={setExerciseWeight}/>
-      <TextInput value={exerciseDuration} onChangeText={setExerciseDuration}/>
-      <TextInput value={exerciseDistance} onChangeText={setExerciseDistance}/>
+      <TextInput value={exerciseName} placeholder='exercise' onChangeText={setExerciseName} />
+      {!isExerciseTimed && <TextInput value={exerciseReps} placeholder='reps' onChangeText={setExerciseReps}/>}
+      {!isExerciseTimed && <TextInput value={exerciseWeight} placeholder='weight' onChangeText={setExerciseWeight}/>}
+      {isExerciseTimed && <TextInput value={exerciseDuration} placeholder='duration' onChangeText={setExerciseDuration}/>}
+      {isExerciseTimed && <TextInput value={exerciseDistance} placeholder='distance' onChangeText={setExerciseDistance}/>}
+      <SafeAreaView>
+        <Pressable onPress={showDatepicker}><Text>Show date picker!</Text></Pressable>
+        {show && (
+          <DateTimePicker
+            value={exerciseDate}
+            mode='date'
+            onChange={onChange}
+          />
+        )}
+    </SafeAreaView>
       {/* Submits the set to the db if pressed */}
       <Pressable onPress={handlePressSubmitSet}>
         <Text>Submit Set</Text>
@@ -144,7 +176,7 @@ const ExerciseChart = ({ displayedExercise }) => {
         WHERE exercise.exerciseName = ?`, [displayedExercise]);
       // Extracts x-axis data array for the line chart
       const xAxisLabelResults = await db.getAllAsync(`
-        SELECT exerciseSet.exerciseReps
+        SELECT exerciseSet.exerciseDate
         FROM exerciseSet 
         JOIN exercise ON exercise.exerciseID = exerciseSet.exerciseID
         WHERE exercise.exerciseName = ?`, [displayedExercise]);
