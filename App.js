@@ -5,7 +5,6 @@ import * as SQLite from 'expo-sqlite';
 import { Dropdown } from 'react-native-element-dropdown';
 import { LineChart } from "react-native-chart-kit";
 import DateTimePicker from '@react-native-community/datetimepicker';
-import { useIsFocused } from '@react-navigation/native';
 
 export default function App() {
   // State variable indicating whether display page or input page is shown
@@ -16,12 +15,10 @@ export default function App() {
     const initDb = async () => {
       const db = await SQLite.openDatabaseAsync('phasic_log');
       await db.execAsync(`
-      DROP TABLE exercise;
       CREATE TABLE IF NOT EXISTS exercise (
         exerciseID INTEGER PRIMARY KEY AUTOINCREMENT, 
         exerciseName TEXT
         ); 
-      DROP TABLE exerciseSet;
       CREATE TABLE IF NOT EXISTS exerciseSet (
         setID INTEGER PRIMARY KEY AUTOINCREMENT, 
         exerciseID INTEGER, 
@@ -141,7 +138,7 @@ const InputPage = () => {
       }
       // Adds set details to the exerciseSet table
       const exerciseID = await db.getFirstAsync(` SELECT exerciseID FROM exercise WHERE exerciseName = ?`, exerciseName);
-      await db.runAsync('INSERT INTO exerciseSet (exerciseID, exerciseDate, isExerciseTimed, exerciseReps, exerciseWeight, exerciseDuration, exerciseDistance) VALUES (?, ?, ?, ?, ?, ?, ?)', exerciseID['exerciseID'], exerciseDate, isExerciseTimed ? true : false, exerciseReps, exerciseWeight, exerciseDuration, exerciseDistance);
+      await db.runAsync('INSERT INTO exerciseSet (exerciseID, exerciseDate, isExerciseTimed, exerciseReps, exerciseWeight, exerciseDuration, exerciseDistance) VALUES (?, ?, ?, ?, ?, ?, ?)', exerciseID['exerciseID'], exerciseDate.toLocaleDateString(), isExerciseTimed ? true : false, exerciseReps, exerciseWeight, exerciseDuration, exerciseDistance);
       resetInputFields();
     }
 
@@ -282,32 +279,33 @@ const ExerciseChart = ({ displayedExercise }) => {
       }
     ]
   });
-  const [yAxisUnits, setYAxisUnits] = useState("kg");
+  const [yAxisUnits, setYAxisUnits] = useState("");
 
   useEffect(() => {
     const extractLineData = async (displayedExercise) => {
       // Opens the database
       const db = await SQLite.openDatabaseAsync('phasic_log');
-    // Extracts y-axis labels array for the line chart
-    const yAxisLabelResults = await db.getAllAsync(`
-      SELECT exerciseSet.exerciseDistance
-      FROM exerciseSet 
-      JOIN exercise ON exercise.exerciseID = exerciseSet.exerciseID
-      WHERE exercise.exerciseName = ?`, [displayedExercise]);
+      // Extracts x-axis (date) and y-axis (average distance) data for the line chart
+      const displayedTable = await db.getAllAsync(`
+        SELECT exerciseSet.exerciseDate, AVG(exerciseSet.exerciseDistance) as averageDistance
+        FROM exerciseSet 
+        JOIN exercise ON exercise.exerciseID = exerciseSet.exerciseID
+        WHERE exercise.exerciseName = ?
+        GROUP BY exerciseSet.exerciseDate`, [displayedExercise]);
 
-    // Extracts x-axis data array for the line chart
-    const xAxisLabelResults = await db.getAllAsync(`
-      SELECT exerciseSet.exerciseDate
-      FROM exerciseSet 
-      JOIN exercise ON exercise.exerciseID = exerciseSet.exerciseID
-      WHERE exercise.exerciseName = ?`, [displayedExercise]);
+      // Extract x-axis labels array (dates)
+      const xAxisLabelResults = displayedTable.map(row => row.exerciseDate);
+
+      // Extract y-axis labels array (average distances)
+      const yAxisLabelResults = displayedTable.map(row => row.averageDistance);
+
 
 
       setLineData({
-        labels: yAxisLabelResults.map(res => res.exerciseDistance),
+        labels: xAxisLabelResults,
         datasets: [
           {
-            data: xAxisLabelResults.map(res => res.exerciseDate)
+            data: yAxisLabelResults
           }
         ]
       });
@@ -326,6 +324,9 @@ const ExerciseChart = ({ displayedExercise }) => {
         width={220}
         height={220}
         yAxisSuffix={yAxisUnits}
+        yAxisLabel= {'Average Distance'}
+        withVerticalLabels={false}
+        withHorizontalLabels={false}
         yAxisInterval={10}
         chartConfig={{
           backgroundColor: "#ffffff",
