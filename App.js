@@ -15,17 +15,16 @@ export default function App() {
     const initDb = async () => {
       const db = await SQLite.openDatabaseAsync('phasic_log');
       await db.execAsync(`
+      DROP TABLE exercise;
       CREATE TABLE IF NOT EXISTS exercise (
         exerciseID INTEGER PRIMARY KEY AUTOINCREMENT, 
         exerciseName TEXT
         ); 
+      DROP TABLE exerciseSet;
       CREATE TABLE IF NOT EXISTS exerciseSet (
         setID INTEGER PRIMARY KEY AUTOINCREMENT, 
         exerciseID INTEGER, 
         exerciseDate TEXT,
-        isExerciseTimed BOOLEAN,
-        exerciseReps INTEGER, 
-        exerciseWeight REAL, 
         exerciseDuration REAL, 
         exerciseDistance REAL, 
         FOREIGN KEY (exerciseID) REFERENCES exercise(exerciseID)
@@ -58,36 +57,17 @@ const InputPage = () => {
   // State variables tracking the inputs of the user when recording their workout set
   const [exerciseName, setExerciseName] = useState('');
   const [isExerciseNameValid, setIsExerciseNameValid] = useState(true)
-  const [exerciseReps, setExerciseReps] = useState('');
-  const [isExerciseRepsValid, setIsExerciseRepsValid] = useState(true)
-  const [exerciseWeight, setExerciseWeight] = useState('');
-  const [isExerciseWeightValid, setIsExerciseWeightValid] = useState(true)
   const [exerciseDuration, setExerciseDuration] = useState('');
   const [isExerciseDurationValid, setIsExerciseDurationValid] = useState(true)
   const [exerciseDistance, setExerciseDistance] = useState('');
   const [isExerciseDistanceValid, setIsExerciseDistanceValid] = useState(true)
   const [exerciseDate, setExerciseDate] = useState(new Date());
   const [show, setShow] = useState(false);
-  const [isExerciseTimed, setIsExerciseTimed] = useState(true);
 
   const validateExerciseName = (text) => {
     const trimmedText = text.trim();
     const isValid = /^[A-Za-z]{4,50}$/.test(trimmedText);
     setIsExerciseNameValid(isValid);
-    return isValid;
-  };
-  
-  const validateExerciseReps = (text) => {
-    const trimmedText = text.trim();
-    const isValid = /^[1-9]\d*$/.test(trimmedText);
-    setIsExerciseRepsValid(isValid);
-    return isValid;
-  };
-  
-  const validateExerciseWeight = (text) => {
-    const trimmedText = text.trim();
-    const isValid = trimmedText === '' || /^\d+(\.\d+)?$/.test(trimmedText);
-    setIsExerciseWeightValid(isValid);
     return isValid;
   };
   
@@ -109,13 +89,9 @@ const InputPage = () => {
   // Resets all input fields, except date, and placeholder colors
   const resetInputFields = () => {
     setExerciseName('');
-    setExerciseReps('');
-    setExerciseWeight('');
     setExerciseDuration('');
     setExerciseDistance('');
     setIsExerciseNameValid(true);
-    setIsExerciseRepsValid(true);
-    setIsExerciseWeightValid(true);
     setIsExerciseDurationValid(true);
     setIsExerciseDistanceValid(true);
   }
@@ -124,9 +100,7 @@ const InputPage = () => {
   const handlePressSubmitSet = async () => {
 
     if (
-      isExerciseTimed && validateExerciseName(exerciseName) && validateExerciseDuration(exerciseDuration) && validateExerciseDistance(exerciseDistance)
-      ||
-      !isExerciseTimed && validateExerciseName(exerciseName) && validateExerciseReps(exerciseReps) && validateExerciseWeight(exerciseWeight)
+      validateExerciseName(exerciseName) && validateExerciseDuration(exerciseDuration) && validateExerciseDistance(exerciseDistance)
     ) {
       // Opens the database
       db = await SQLite.openDatabaseAsync('phasic_log');
@@ -138,7 +112,7 @@ const InputPage = () => {
       }
       // Adds set details to the exerciseSet table
       const exerciseID = await db.getFirstAsync(` SELECT exerciseID FROM exercise WHERE exerciseName = ?`, exerciseName);
-      await db.runAsync('INSERT INTO exerciseSet (exerciseID, exerciseDate, isExerciseTimed, exerciseReps, exerciseWeight, exerciseDuration, exerciseDistance) VALUES (?, ?, ?, ?, ?, ?, ?)', exerciseID['exerciseID'], exerciseDate.toLocaleDateString(), isExerciseTimed ? true : false, exerciseReps, exerciseWeight, exerciseDuration, exerciseDistance);
+      await db.runAsync('INSERT INTO exerciseSet (exerciseID, exerciseDate, exerciseDuration, exerciseDistance) VALUES (?, ?, ?, ?)', exerciseID['exerciseID'], exerciseDate.toLocaleDateString(), exerciseDuration, exerciseDistance);
       resetInputFields();
     }
 
@@ -156,15 +130,8 @@ const InputPage = () => {
     setShow(true); // Show the date picker when the user presses the button
   };
 
-  const handleSwitchMode = () => {
-    setIsExerciseTimed(!isExerciseTimed)
-    resetInputFields();
-  }
-
   return (
     <>
-      {/* Button to switch between timed and counted exercise */}
-      <Pressable onPress={handleSwitchMode}><Text>{isExerciseTimed ? `Time Mode` : `Rep Mode`}</Text></Pressable>
       {/* Input fields for the set details */}
       <SafeAreaView>
         <Pressable onPress={showDatepicker}><Text>{exerciseDate.toLocaleDateString()}</Text></Pressable>
@@ -186,29 +153,6 @@ const InputPage = () => {
   }} 
   style={{ color: isExerciseNameValid ? 'black' : 'red' }}
 />
-{!isExerciseTimed &&
-  <TextInput 
-  value={exerciseReps} 
-  placeholder='reps' 
-  onChangeText={(text) => { 
-    setExerciseReps(text); 
-    validateExerciseReps(text); 
-  }} 
-  style={{ color: isExerciseRepsValid ? 'black' : 'red' }}
-/>
-}
-{!isExerciseTimed &&
-<TextInput 
-  value={exerciseWeight} 
-  placeholder='weight' 
-  onChangeText={(text) => { 
-    setExerciseWeight(text); 
-    validateExerciseWeight(text); 
-  }} 
-  style={{ color: isExerciseWeightValid ? 'black' : 'red' }}
-/>
-}
-{isExerciseTimed &&
 <TextInput 
   value={exerciseDuration} 
   placeholder='duration' 
@@ -218,8 +162,6 @@ const InputPage = () => {
   }} 
   style={{ color: isExerciseDurationValid ? 'black' : 'red' }}
 />
-}
-{isExerciseTimed &&
 <TextInput 
   value={exerciseDistance} 
   placeholder='distance' 
@@ -229,7 +171,6 @@ const InputPage = () => {
   }} 
   style={{ color: isExerciseDistanceValid ? 'black' : 'red' }}
 />
-}
 
 
       {/* Submits the set to the db if pressed */}
@@ -271,14 +212,16 @@ const StatPage = () => {
 };
 
 const ExerciseChart = ({ displayedExercise }) => {
+// Make this timed one and one for non-timed split out
   const [lineData, setLineData] = useState({
     labels: ["Day 1", "Day 2", "Day 3"],
     datasets: [
       {
-        data: [10, 20, 30]
+        data: [10, 10, 10]
       }
     ]
   });
+
   const [yAxisUnits, setYAxisUnits] = useState("");
 
   useEffect(() => {
@@ -287,7 +230,9 @@ const ExerciseChart = ({ displayedExercise }) => {
       const db = await SQLite.openDatabaseAsync('phasic_log');
       // Extracts x-axis (date) and y-axis (average distance) data for the line chart
       const displayedTable = await db.getAllAsync(`
-        SELECT exerciseSet.exerciseDate, AVG(exerciseSet.exerciseDistance) as averageDistance
+        SELECT 
+          *,
+          AVG(exerciseSet.exerciseDistance) as averageExerciseDistance
         FROM exerciseSet 
         JOIN exercise ON exercise.exerciseID = exerciseSet.exerciseID
         WHERE exercise.exerciseName = ?
@@ -297,8 +242,7 @@ const ExerciseChart = ({ displayedExercise }) => {
       const xAxisLabelResults = displayedTable.map(row => row.exerciseDate);
 
       // Extract y-axis labels array (average distances)
-      const yAxisLabelResults = displayedTable.map(row => row.averageDistance);
-
+      const yAxisLabelResults = displayedTable.map(row => row.averageExerciseDistance);
 
 
       setLineData({
