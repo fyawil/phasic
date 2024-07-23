@@ -1,4 +1,4 @@
-import { Text, View } from 'react-native';
+import { Text, View, Dimensions } from 'react-native';
 import { useState, useEffect } from 'react';
 import * as SQLite from 'expo-sqlite';
 import { Dropdown } from 'react-native-element-dropdown';
@@ -82,30 +82,37 @@ const ExerciseChart = ({ displayedExercise }) => {
     }
   }, [displayedExercise]);
 
+const screenWidth = Dimensions.get('window').width;
+const screenHeight = Dimensions.get('window').height;
+
+
   return (
     <View>
       <Text>{displayedExercise}</Text>
       <LineChart
-        data={lineData}
-        width={220}
-        height={220}
-        yAxisSuffix={yAxisUnits}
-        yAxisLabel={'Average Distance'}
-        withVerticalLabels={false}
-        withHorizontalLabels={false}
-        yAxisInterval={10}
-        chartConfig={{
-          backgroundColor: "#ffffff",
-          decimalPlaces: 0,
-          color: (opacity = 1) => `rgba(255, 255, 255, ${opacity})`,
-          labelColor: (opacity = 1) => `rgba(255, 255, 255, ${opacity})`,
-          propsForDots: {
-            r: "2",
-            strokeWidth: "2",
-            stroke: "#ffffff"
-          }
-        }}
-        bezier />
+      style={{ transform: 'rotate(90deg)' }}
+      data={lineData}
+      width={screenHeight}
+      height={screenWidth}
+      yAxisSuffix={yAxisUnits}
+      withVerticalLabels={true}
+      withHorizontalLabels={true}
+      yAxisInterval={1}
+      chartConfig={{
+        backgroundColor: "#ffffff",
+        backgroundGradientFrom: "#f3f4f6",
+        backgroundGradientTo: "#e2e8f0",
+        decimalPlaces: 2,
+        color: (opacity = 1) => `rgba(75, 85, 99, ${opacity})`,
+        labelColor: (opacity = 1) => `rgba(107, 114, 128, ${opacity})`,
+        propsForDots: {
+          r: "4",
+          strokeWidth: "2",
+          stroke: "#3b82f6"
+        }
+      }}
+      bezier
+    />
     </View>
   );
 };
